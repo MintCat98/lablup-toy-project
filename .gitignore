@@ -1,0 +1,13 @@
+# Python 가상 환경
+.venv/
+
+# 캐시 파일
+__pycache__/
+*.py[cod]
+
+# 환경 설정 파일
+.env
+*.env
+
+# For test
+test/
