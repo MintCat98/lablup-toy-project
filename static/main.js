@@ -40,7 +40,7 @@ function connectWebSocket() {
 
     // 나가기 버튼 클릭 이벤트
     exitBtn.onclick = () => {
-        ws.send(JSON.stringify({ sender: userId, message: "exit" }));
+        ws.send(JSON.stringify({ sender: userId, message: "/exit" }));
         ws.close();
         alert("채팅을 종료했습니다.");
         window.location.reload();

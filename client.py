@@ -25,6 +25,14 @@ async def chat_client():
                 while True:
                     msg = input()
                     if msg.strip():  # Send only if message is not empty
+                        # Exit
+                        if msg.lower() == "/exit":
+                            await ws.send_json({"sender": user_id, "message": "exit"})
+                            await ws.close()
+                            print("채팅 종료")
+                            break
+
+                        # Publish to Redis
                         await redis_client.publish("chat_channel", f"{user_id}: {msg}")
                         await ws.send_json({"sender": user_id, "message": msg})
 
