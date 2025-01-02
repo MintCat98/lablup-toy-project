@@ -4,44 +4,43 @@ import redis.asyncio as redis
 
 
 async def chat_client():
-    # Init
     redis_client = redis.Redis(host="localhost", port=6379)
 
-    # Username will be handled in "static/main.js"
+    user_id = await redis_client.get("user:current_user")
+
+    if not user_id:
+        print("닉네임이 없습니다. 먼저 웹에서 닉네임을 설정하세요.")
+        return
+
+    user_id = user_id.decode("utf-8")
+    print(f"{user_id}으로 연결 시도 중...")
 
     async with aiohttp.ClientSession() as session:
-        # WebSocket connection
         async with session.ws_connect("http://localhost:8080/ws") as ws:
-            print("연결 성공")
+            print(f"{user_id}으로 연결 성공")
 
-            # Send
-            # To exit, click the exit button in the web page
             async def pub_to_redis():
                 while True:
-                    msg = input()
-                    if msg.strip():  # Send only if message is not empty
-                        # Exit
+                    msg = input("메시지: ").strip()
+                    if msg:
                         if msg.lower() == "/exit":
                             await ws.send_json({"sender": user_id, "message": "exit"})
                             await ws.close()
                             print("채팅 종료")
                             break
-
-                        # Publish to Redis
                         await redis_client.publish("chat_channel", f"{user_id}: {msg}")
-                        await ws.send_json({"sender": user_id, "message": msg})
+                        await ws.send_json({"sender": user_id, "text": msg})
 
-            # Receive
             async def sub_from_redis():
                 async for msg in ws:
                     if msg.type == aiohttp.WSMsgType.TEXT:
                         data = msg.json()
-                        print(f"{data['sender']}: {data['message']}")
+                        print(f"{data['sender']}: {data['text']}")
                     elif msg.type == aiohttp.WSMsgType.CLOSED:
                         print("연결 종료")
                         break
                     elif msg.type == aiohttp.WSMsgType.ERROR:
-                        print("WS 에러 발생")
+                        print("WebSocket 에러 발생")
                         break
 
             await asyncio.gather(pub_to_redis(), sub_from_redis())

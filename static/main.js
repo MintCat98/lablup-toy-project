@@ -10,9 +10,10 @@ const confirmBtn = document.getElementById("confirm-btn");
 // 닉네임 및 WebSocket 상태
 let userId;
 let ws;
+let isNicknameSent = false;
 
 let reconnectAttempts = 0;
-const maxReconnectAttempts = 5;
+const maxReconnectAttempts = 3;
 
 // 초기 모달 팝업 표시
 window.onload = () => {
@@ -24,7 +25,17 @@ confirmBtn.onclick = () => {
     userId = nicknameInput.value.trim();
     if (userId) {
         nicknameModal.style.display = "none";
-        connectWebSocket();
+        fetch('/set-nickname', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ nickname: userId }),
+        }).then(() => {
+            connectWebSocket();
+        }).catch((err) => {
+            console.error("닉네임 설정 중 오류 발생", err);
+        });
     } else {
         alert("닉네임을 입력하세요.");
     }
@@ -53,12 +64,11 @@ function setWebSocketHandlers() {
     ws.onopen = () => {
         console.log("WebSocket 연결 성공");
         reconnectAttempts = 0;
-        if (userId) {
+    
+        if (userId && !isNicknameSent) {
             ws.send(JSON.stringify({ sender: userId, message: "connect" }));
             console.log(`${userId} 닉네임 전송 완료`);
-        } else {
-            console.log("닉네임이 존재하지 않습니다.");
-            alert("닉네임이 없습니다. 새로고침 후 닉네임을 입력하세요.");
+            isNicknameSent = true;
         }
     };
 
@@ -69,6 +79,11 @@ function setWebSocketHandlers() {
     };
 
     ws.onclose = () => {
+        if (reconnectAttempts < maxReconnectAttempts) {
+            isNicknameSent = true;
+        } else {
+            isNicknameSent = false;
+        }
         if (userId && reconnectAttempts < maxReconnectAttempts) {
             reconnectAttempts++;
             console.log(`WebSocket 종료. ${reconnectAttempts}회 재연결 시도 중...`);
