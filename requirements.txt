@@ -1,0 +1,21 @@
+# Python version requirement
+python_version >= 3.12
+
+# Asynchronous I/O and HTTP client-related packages
+aiohttp==3.11.11            # Asynchronous HTTP client/server library
+aiohappyeyeballs==2.4.4     # DNS resolver using the Happy Eyeballs algorithm
+aiosignal==1.3.2            # Asynchronous event signal handling
+frozenlist==1.5.0           # Immutable list implementation (aiohttp dependency)
+multidict==6.1.0            # Multi-key dictionary (aiohttp dependency)
+yarl==1.18.3                # URL manipulation library (aiohttp dependency)
+
+# Session management and caching packages
+aiohttp-session==2.12.1     # Session management for aiohttp
+propcache==0.2.1            # Property-based caching library
+
+# Redis client
+redis==5.2.1                # Asynchronous Redis client
+
+# Utility packages
+attrs==24.3.0               # Class attribute handling and data class-like functionality
+idna==3.10                  # Internationalized domain name (IDN) handling
