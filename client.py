@@ -3,16 +3,11 @@ import aiohttp
 import redis.asyncio as redis
 
 
-# https://docs.aiohttp.org/en/stable/client_quickstart.html
-# https://coding-shop.tistory.com/362
 async def chat_client():
     # Init
     redis_client = redis.Redis(host="localhost", port=6379)
 
-    # Username
-    user_id = None
-    while not user_id:
-        user_id = input("사용자 이름 입력: ").strip()
+    # Username will be handled in "static/main.js"
 
     async with aiohttp.ClientSession() as session:
         # WebSocket connection
