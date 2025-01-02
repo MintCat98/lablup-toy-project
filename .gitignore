@@ -11,3 +11,6 @@ __pycache__/
 
 # For test
 test/
+
+# IDE 설정 파일
+.DS_Store
