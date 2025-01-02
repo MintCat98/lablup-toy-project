@@ -1,6 +1,4 @@
-/*
-    카카오톡 채팅 UI를 GPT로 cloning했음
-*/
+/* ===== 공통 스타일 ===== */
 body {
     font-family: 'Arial', sans-serif;
     text-align: center;
@@ -10,8 +8,7 @@ body {
 }
 
 
-
-/* 모달 팝업 스타일 */
+/* ===== 모달 팝업 스타일 ===== */
 .modal {
     display: none;
     position: fixed;
@@ -38,8 +35,7 @@ body {
 .modal-content input {
     width: 90%;
     padding: 10px;
-    margin-top: 15px;
-    margin-bottom: 20px;
+    margin: 15px 0;
     border: 1px solid #555;
     border-radius: 5px;
 }
@@ -58,8 +54,7 @@ body {
 }
 
 
-
-/* 채팅박스 스타일 */
+/* ===== 채팅 박스 스타일 ===== */
 #chat-box {
     width: 80%;
     height: 400px;
@@ -72,10 +67,20 @@ body {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
+
+/* ===== 입력창 및 버튼 컨테이너 ===== */
+#chat-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px auto;
+    gap: 10px;  /* 요소 간 간격 */
+    width: 80%;
+}
+
 #chat-input {
-    width: 70%;
+    flex: 1;
     padding: 12px;
-    margin-right: 10px;
     border: 1px solid #555;
     border-radius: 20px;
     background-color: #3c3c3c;
@@ -83,11 +88,10 @@ body {
 }
 
 
-
-/* 전송 버튼 스타일 */
+/* ===== 전송 버튼 스타일 ===== */
 #send-btn {
-    width: 15%;
-    padding: 12px;
+    width: auto;
+    padding: 12px 20px;
     background-color: #007bff;
     color: white;
     border: none;
@@ -101,18 +105,16 @@ body {
 }
 
 
-
-/* 종료 버튼 스타일 */
+/* ===== 나가기 버튼 스타일 ===== */
 #exit-btn {
-    width: 15%;
-    padding: 12px;
+    width: auto;
+    padding: 12px 20px;
     background-color: #ff3b30;
     color: white;
     border: none;
     border-radius: 20px;
     cursor: pointer;
     font-weight: bold;
-    margin-top: 15px;
 }
 
 #exit-btn:hover {
@@ -120,8 +122,7 @@ body {
 }
 
 
-
-/* 닉네임 스타일 */
+/* ===== 닉네임 스타일 ===== */
 .nickname {
     font-size: 14px;
     font-weight: bold;
@@ -130,8 +131,7 @@ body {
 }
 
 
-
-/* 채팅 메시지 스타일 */
+/* ===== 채팅 메시지 스타일 ===== */
 .message {
     padding: 10px;
     border-radius: 10px;
