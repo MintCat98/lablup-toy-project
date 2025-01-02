@@ -126,16 +126,16 @@ body {
 .nickname {
     font-size: 14px;
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 0.5px;
     display: block;
 }
 
 
 /* ===== 채팅 메시지 스타일 ===== */
 .message {
-    padding: 10px;
+    padding: 8px;
     border-radius: 10px;
-    margin: 4px 0;
+    margin: 2px 0;
     display: inline-block;
     max-width: 70%;
     word-wrap: break-word;
@@ -161,7 +161,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
 }
 
 .message-wrapper .user {
@@ -176,7 +176,7 @@ body {
 /* ===== 타임스탬프 스타일 ===== */
 .timestamp {
     font-size: 10px;
-    margin-top: 1px;
+    margin-top: 0.5px;
     color: #aaa;
 }
 
