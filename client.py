@@ -4,7 +4,7 @@ import redis.asyncio as redis
 
 
 async def chat_client():
-    redis_client = redis.Redis(host="localhost", port=6379)
+    redis_client = redis.Redis(host="redis", port=6379)
 
     user_id = await redis_client.get("user:current_user")
 
@@ -16,7 +16,7 @@ async def chat_client():
     print(f"{user_id}으로 연결 시도 중...")
 
     async with aiohttp.ClientSession() as session:
-        async with session.ws_connect("http://localhost:8080/ws") as ws:
+        async with session.ws_connect("http://redis:8080/ws") as ws:
             print(f"{user_id}으로 연결 성공")
 
             async def pub_to_redis():

@@ -8,7 +8,7 @@ from aiohttp_session.redis_storage import RedisStorage
 import pathlib
 
 # Redis 설정
-REDIS_HOST = 'localhost'
+REDIS_HOST = 'redis'
 REDIS_PORT = 6379
 redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 clients = {}
@@ -131,4 +131,4 @@ async def redis_subscriber():
 
 # 서버 실행
 if __name__ == "__main__":
-    web.run_app(create_app(), port=8080)
+    web.run_app(create_app(), host="0.0.0.0", port=8080)
