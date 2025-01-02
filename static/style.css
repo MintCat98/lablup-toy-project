@@ -189,3 +189,19 @@ body {
     text-align: left;
     margin-right: auto;
 }
+
+
+/* ===== 시스템 메시지 스타일 ===== */
+.system-message-wrapper {
+    text-align: center;
+    margin: 16px 0;
+}
+
+.system-message {
+    display: inline-block;
+    background-color: #3a3b3c;
+    color: #ffffff;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 10px;
+}

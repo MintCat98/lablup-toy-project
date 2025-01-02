@@ -81,6 +81,10 @@ async def websocket_handler(request, ws, session):
     await pubsub.subscribe('chat_channel')
     print(f"{user_id} 연결됨.")
 
+    # 입장 메시지 브로드캐스트
+    join_message = {"sender": "system", "text": f"{user_id} 님이 입장하셨습니다."}
+    await redis_client.publish('chat_channel', json.dumps(join_message))
+
     try:
         async for msg in ws:
             if msg.type == aiohttp.WSMsgType.TEXT:

@@ -74,8 +74,13 @@ function setWebSocketHandlers() {
 
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        const sender = data.sender === userId ? "user" : "other";
-        appendMessage(data, sender);
+    
+        if (data.sender === "system") {
+            appendSystemMessage(data.text);
+        } else {
+            const sender = data.sender === userId ? "user" : "other";
+            appendMessage(data, sender);
+        }
     };
 
     ws.onclose = () => {
@@ -167,5 +172,18 @@ function appendMessage(message, sender = "other") {
     msgWrapper.appendChild(msg);
     msgWrapper.appendChild(timestamp);
     chatBox.appendChild(msgWrapper);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function appendSystemMessage(message) {
+    const systemMessageWrapper = document.createElement("div");
+    systemMessageWrapper.classList.add("system-message-wrapper");
+
+    const systemMessage = document.createElement("div");
+    systemMessage.classList.add("system-message");
+    systemMessage.textContent = message;
+
+    systemMessageWrapper.appendChild(systemMessage);
+    chatBox.appendChild(systemMessageWrapper);
     chatBox.scrollTop = chatBox.scrollHeight;
 }
