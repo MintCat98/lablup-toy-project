@@ -136,6 +136,11 @@ chatInput.addEventListener("keypress", (event) => {
 
 // 채팅 메시지를 DOM에 추가하는 함수
 function appendMessage(message, sender = "other") {
+    if (!message.text || message.text.trim() === "") {
+        // 메시지가 비어 있으면 추가하지 않음
+        return;
+    }
+
     const msgWrapper = document.createElement("div");
     msgWrapper.classList.add("message-wrapper");
     msgWrapper.classList.add(sender);  // 'user' 또는 'other' 클래스 추가
