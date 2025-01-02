@@ -52,8 +52,14 @@ function connectWebSocket() {
 function setWebSocketHandlers() {
     ws.onopen = () => {
         console.log("WebSocket 연결 성공");
-        reconnectAttempts = 0;  // 재연결 횟수 초기화
-        ws.send(JSON.stringify({ sender: userId, message: "connect" }));
+        reconnectAttempts = 0;
+        if (userId) {
+            ws.send(JSON.stringify({ sender: userId, message: "connect" }));
+            console.log(`${userId} 닉네임 전송 완료`);
+        } else {
+            console.log("닉네임이 존재하지 않습니다.");
+            alert("닉네임이 없습니다. 새로고침 후 닉네임을 입력하세요.");
+        }
     };
 
     ws.onmessage = (event) => {
@@ -116,21 +122,30 @@ chatInput.addEventListener("keypress", (event) => {
 // 채팅 메시지를 DOM에 추가하는 함수
 function appendMessage(message, sender = "other") {
     const msgWrapper = document.createElement("div");
-    msgWrapper.classList.add("message");
-    msgWrapper.classList.add(sender === "user" ? "user" : "other");
+    msgWrapper.classList.add("message-wrapper");
+    msgWrapper.classList.add(sender);  // 'user' 또는 'other' 클래스 추가
 
-    // 다른 사용자의 경우 닉네임 추가
+    const msg = document.createElement("div");
+    msg.classList.add("message");
+    msg.classList.add(sender === "user" ? "user" : "other");
+    msg.textContent = message.text;
+
+    const timestamp = document.createElement("div");
+    const now = new Date();
+    const formattedTime = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()} - ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    timestamp.textContent = formattedTime;
+    timestamp.classList.add("timestamp", sender === "user" ? "user-timestamp" : "other-timestamp");
+
+    // 닉네임 추가 (다른 유저일 때만)
     if (sender !== "user") {
-        const nickname = document.createElement("span");
+        const nickname = document.createElement("div");
         nickname.textContent = message.sender;
-        nickname.classList.add("nickname", message.sender.toLowerCase());
+        nickname.classList.add("nickname");
         msgWrapper.appendChild(nickname);
     }
 
-    const msg = document.createElement("div");
-    msg.textContent = message.text;
-
     msgWrapper.appendChild(msg);
+    msgWrapper.appendChild(timestamp);
     chatBox.appendChild(msgWrapper);
-    chatBox.scrollTop = chatBox.scrollHeight;  // 최신 메시지로 스크롤 이동
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
