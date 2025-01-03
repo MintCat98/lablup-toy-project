@@ -8,5 +8,8 @@ aiohttp-session>=2.12.1     # Session management for aiohttp
 # Redis client
 redis>=5.2.1                # Asynchronous Redis client
 
+# WSGI server
+gunicorn==23.0.0            # WSGI HTTP server for UNIX
+
 # Utility packages
 attrs>=24.3.0               # Class attribute handling and data class-like functionality

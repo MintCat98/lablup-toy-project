@@ -1,6 +1,7 @@
 import asyncio
 import json
 import uuid
+import os
 
 import aiohttp
 from aiohttp import web
@@ -132,4 +133,14 @@ class WebServer:
 
 if __name__ == "__main__":
     server = WebServer()
-    web.run_app(server.create_app(), host="0.0.0.0", port=8080)
+    app = server.create_app()
+
+    # Default to single-process mode
+    app_mode = os.getenv('APP_MODE', 'single-process')
+
+    if app_mode == 'multi-process':
+        import gunicorn.app.base
+        from gunicorn.app.wsgiapp import run
+        run()
+    else:
+        web.run_app(app, host="0.0.0.0", port=8080)

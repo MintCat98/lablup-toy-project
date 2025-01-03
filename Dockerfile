@@ -7,4 +7,9 @@ COPY . .
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-CMD ["python", "server.py"]
+ENTRYPOINT ["bash", "-c", "\
+if [ \"$APP_MODE\" = 'multi-process' ]; then \
+    gunicorn -w ${APP_WORKERS:-4} -k aiohttp.GunicornWebWorker -b 0.0.0.0:8080 server:app; \
+else \
+    python server.py; \
+fi"]

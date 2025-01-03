@@ -1,5 +1,6 @@
 # Lablup Toy Project
 A lightweight toy project for backend development training using Python and modern async frameworks.
+<br>
 
 ## Project Overview
 This project aims to provide hands-on experience in building and deploying a simple web application using asynchronous Python frameworks. The goal is to create a real-time multi-user chat app leveraging aiohttp and redis-py.
@@ -28,9 +29,14 @@ This project aims to provide hands-on experience in building and deploying a sim
 
 2. **Run with Docker**
    ```bash
+   # Mode: Single-process
    docker-compose up --build
+
+   # Mode: Multi-process
+   APP_MODE=multi-process APP_WORKERS=6 docker compose up --build
    ```
    *This will automatically build and start the application with all dependencies (Redis, Python, etc.).*
+   *You can select a mode between single and multi-process mode.*
 <br>
 
 3. **Access the app**
