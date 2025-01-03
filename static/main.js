@@ -31,8 +31,15 @@ confirmBtn.onclick = () => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ nickname: userId }),
-        }).then(() => {
-            connectWebSocket();
+        }).then((response) => {
+            if (!response.ok) {
+                return response.json().then((data) => {
+                    alert(data.error);
+                    nicknameModal.style.display = "block";
+                });
+            } else {
+                connectWebSocket();
+            }
         }).catch((err) => {
             console.error("닉네임 설정 중 오류 발생", err);
         });

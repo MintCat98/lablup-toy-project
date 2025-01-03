@@ -1,5 +1,7 @@
 import asyncio
 import json
+import uuid
+
 import aiohttp
 from aiohttp import web
 import redis.asyncio as redis
@@ -28,7 +30,6 @@ async def create_app():
     redis_instance = await init_redis()
     setup(app, RedisStorage(redis_instance))
 
-    # 웹 소켓 및 정적 파일 라우팅
     app.router.add_get('/ws', websocket_handler)
     app.router.add_post('/set-nickname', set_nickname)
     app.router.add_get('/', index)
@@ -45,7 +46,20 @@ async def set_nickname(request):
     data = await request.json()
     nickname = data.get('nickname')
     session = await get_session(request)
+    session_id = session.get('session_id', str(
+        uuid.uuid4()))  # 세션 ID 생성 또는 가져오기
+    session['session_id'] = session_id
+
+    # Redis에서 닉네임 중복 확인 (세션 ID 고려)
+    existing_sessions = await redis_client.keys(f"user:{nickname}:*")
+
+    # 같은 닉네임으로 다른 세션이 존재하는 경우
+    if existing_sessions and f"user:{nickname}:{session_id}" not in existing_sessions:
+        return web.json_response({'error': f'{nickname}은 이미 사용중인 닉네임입니다.'}, status=400)
+
+    # 닉네임 및 세션 저장
     session['user_id'] = nickname
+    await redis_client.set(f"user:{nickname}:{session_id}", "connected")
     return web.json_response({'message': f'{nickname} 닉네임 설정 완료'})
 
 
@@ -67,11 +81,13 @@ async def index(request):
     return web.FileResponse(BASE_DIR / 'templates/index.html')
 
 
+# WebSocket 핸들러
 @with_session_and_redis
 async def websocket_handler(request, ws, session):
     pubsub = redis_client.pubsub()
-
     user_id = session.get('user_id')
+    session_id = session.get('session_id')
+
     if not user_id:
         await ws.send_json({"error": "닉네임이 없습니다. 새로고침 후 다시 시도하세요."})
         await ws.close()
@@ -79,9 +95,8 @@ async def websocket_handler(request, ws, session):
 
     clients[user_id] = ws
     await pubsub.subscribe('chat_channel')
-    print(f"{user_id} 연결됨.")
+    print(f"{user_id} 연결됨. (세션: {session_id})")
 
-    # 입장 메시지 브로드캐스트
     join_message = {"sender": "system", "text": f"{user_id} 님이 입장하셨습니다."}
     await redis_client.publish('chat_channel', json.dumps(join_message))
 
@@ -89,25 +104,17 @@ async def websocket_handler(request, ws, session):
         async for msg in ws:
             if msg.type == aiohttp.WSMsgType.TEXT:
                 data = json.loads(msg.data)
-
-                if data.get("message") == "connect":
-                    user_id = data["sender"]
-                    session['user_id'] = user_id
-                    await ws.send_json({"message": f"{user_id} 닉네임 저장 완료"})
-                    print(f"닉네임 {user_id} 세션에 저장 완료.")
-
-                elif data.get("message") == "/exit":
-                    print(f"{user_id} 채팅 종료.")
+                if data.get("message") == "/exit":
                     break
-
-                elif data.get("text") and data['text'].strip():
+                elif data.get("text"):
                     await redis_client.publish('chat_channel', json.dumps(data))
-
             elif msg.type == aiohttp.WSMsgType.CLOSED:
                 break
     finally:
-        if user_id and user_id in clients:
+        if user_id:
             del clients[user_id]
+            await redis_client.delete(f"user:{user_id}:{session_id}")
+            print(f"{user_id} 연결 해제 및 세션 삭제 완료. (세션: {session_id})")
     return ws
 
 
