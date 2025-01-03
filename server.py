@@ -9,133 +9,127 @@ from aiohttp_session import get_session, setup
 from aiohttp_session.redis_storage import RedisStorage
 import pathlib
 
-# Redis 설정
-REDIS_HOST = 'redis'
-REDIS_PORT = 6379
-redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
-clients = {}
 
-# 프로젝트 경로 설정
-BASE_DIR = pathlib.Path(__file__).parent
+class WebServer:
+    def __init__(self):
+        # Config for Redis
+        self.REDIS_HOST = 'redis'
+        self.REDIS_PORT = 6379
+        self.redis_client = redis.Redis(
+            host=self.REDIS_HOST, port=self.REDIS_PORT)
+        self.clients = {}
 
+        # Base directory
+        self.BASE_DIR = pathlib.Path(__file__).parent
 
-async def init_redis():
-    redis_pool = redis.ConnectionPool(host=REDIS_HOST, port=REDIS_PORT)
-    return redis.StrictRedis(connection_pool=redis_pool)
+    async def init_redis(self):
+        # Create a connection pool for Redis
+        redis_pool = redis.ConnectionPool(
+            host=self.REDIS_HOST, port=self.REDIS_PORT)
+        return redis.StrictRedis(connection_pool=redis_pool)
 
+    async def create_app(self):
+        # Create an aiohttp web application
+        app = web.Application()
+        redis_instance = await self.init_redis()
+        setup(app, RedisStorage(redis_instance))
 
-async def create_app():
-    app = web.Application()
+        app.router.add_get('/ws', self.websocket_handler)
+        app.router.add_post('/set-nickname', self.set_nickname)
+        app.router.add_get('/', self.index)
+        app.router.add_static(
+            '/static/', path=self.BASE_DIR / 'static', name='static')
 
-    redis_instance = await init_redis()
-    setup(app, RedisStorage(redis_instance))
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.redis_subscriber())
 
-    app.router.add_get('/ws', websocket_handler)
-    app.router.add_post('/set-nickname', set_nickname)
-    app.router.add_get('/', index)
-    app.router.add_static('/static/', path=BASE_DIR / 'static', name='static')
+        return app
 
-    loop = asyncio.get_event_loop()
-    loop.create_task(redis_subscriber())
+    async def set_nickname(self, request):
+        # Set a nickname for the user
+        data = await request.json()
+        nickname = data.get('nickname')
+        session = await get_session(request)
+        session_id = session.get('session_id', str(uuid.uuid4()))
+        session['session_id'] = session_id
 
-    return app
+        # Check if the nickname is already in use
+        existing_sessions = await self.redis_client.keys(f"user:{nickname}:*")
+        if existing_sessions and f"user:{nickname}:{session_id}" not in existing_sessions:
+            return web.json_response({'error': f'{nickname}은 이미 사용중인 닉네임입니다.'}, status=400)
 
+        # Set the nickname in the session and Redis
+        session['user_id'] = nickname
+        await self.redis_client.set(f"user:{nickname}:{session_id}", "connected")
+        return web.json_response({'message': f'{nickname} 닉네임 설정 완료'})
 
-# 닉네임 설정 핸들러
-async def set_nickname(request):
-    data = await request.json()
-    nickname = data.get('nickname')
-    session = await get_session(request)
-    session_id = session.get('session_id', str(
-        uuid.uuid4()))  # 세션 ID 생성 또는 가져오기
-    session['session_id'] = session_id
+    async def index(self, request):
+        # Serve the index.html file
+        session = await get_session(request)
+        user_id = session.get('user_id', '닉네임 없음')
+        print(f"현재 세션 사용자: {user_id}")
+        return web.FileResponse(self.BASE_DIR / 'templates/index.html')
 
-    # Redis에서 닉네임 중복 확인 (세션 ID 고려)
-    existing_sessions = await redis_client.keys(f"user:{nickname}:*")
-
-    # 같은 닉네임으로 다른 세션이 존재하는 경우
-    if existing_sessions and f"user:{nickname}:{session_id}" not in existing_sessions:
-        return web.json_response({'error': f'{nickname}은 이미 사용중인 닉네임입니다.'}, status=400)
-
-    # 닉네임 및 세션 저장
-    session['user_id'] = nickname
-    await redis_client.set(f"user:{nickname}:{session_id}", "connected")
-    return web.json_response({'message': f'{nickname} 닉네임 설정 완료'})
-
-
-# WebSocket 핸들러
-def with_session_and_redis(func):
-    async def wrapper(request):
+    async def websocket_handler(self, request):
+        # Handle WebSocket connections
         session = await get_session(request)
         ws = web.WebSocketResponse()
         await ws.prepare(request)
+        user_id = session.get('user_id')
+        session_id = session.get('session_id')
 
-        return await func(request, ws, session)
-    return wrapper
+        # Check if the user has set a nickname
+        if not user_id:
+            await ws.send_json({"error": "닉네임이 없습니다. 새로고침 후 다시 시도하세요."})
+            await ws.close()
+            return ws
 
+        # Add the WebSocket connection to the list of clients
+        self.clients[user_id] = ws
+        pubsub = self.redis_client.pubsub()
+        await pubsub.subscribe('chat_channel')
 
-async def index(request):
-    session = await get_session(request)
-    user_id = session.get('user_id', '닉네임 없음')
-    print(f"현재 세션 사용자: {user_id}")
-    return web.FileResponse(BASE_DIR / 'templates/index.html')
+        # Send a message to all clients that a new user has joined
+        join_message = {"sender": "system", "text": f"{user_id} 님이 입장하셨습니다."}
+        await self.redis_client.publish('chat_channel', json.dumps(join_message))
 
-
-# WebSocket 핸들러
-@with_session_and_redis
-async def websocket_handler(request, ws, session):
-    pubsub = redis_client.pubsub()
-    user_id = session.get('user_id')
-    session_id = session.get('session_id')
-
-    if not user_id:
-        await ws.send_json({"error": "닉네임이 없습니다. 새로고침 후 다시 시도하세요."})
-        await ws.close()
+        try:
+            # Listen for messages from the client
+            async for msg in ws:
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    data = json.loads(msg.data)
+                    if data.get("message") == "/exit":
+                        break
+                    elif data.get("text"):
+                        await self.redis_client.publish('chat_channel', json.dumps(data))
+                elif msg.type == aiohttp.WSMsgType.CLOSED:
+                    break
+        finally:
+            # Remove the WebSocket connection from the list of clients
+            if user_id:
+                del self.clients[user_id]
+                await self.redis_client.delete(f"user:{user_id}:{session_id}")
+                print(f"{user_id} 연결 해제 및 세션 삭제 완료. (세션: {session_id})")
         return ws
 
-    clients[user_id] = ws
-    await pubsub.subscribe('chat_channel')
-    print(f"{user_id} 연결됨. (세션: {session_id})")
+    async def redis_subscriber(self):
+        # Subscribe to the chat_channel in Redis to broadcast messages
+        pubsub = self.redis_client.pubsub()
+        await pubsub.subscribe('chat_channel')
 
-    join_message = {"sender": "system", "text": f"{user_id} 님이 입장하셨습니다."}
-    await redis_client.publish('chat_channel', json.dumps(join_message))
-
-    try:
-        async for msg in ws:
-            if msg.type == aiohttp.WSMsgType.TEXT:
-                data = json.loads(msg.data)
-                if data.get("message") == "/exit":
-                    break
-                elif data.get("text"):
-                    await redis_client.publish('chat_channel', json.dumps(data))
-            elif msg.type == aiohttp.WSMsgType.CLOSED:
-                break
-    finally:
-        if user_id:
-            del clients[user_id]
-            await redis_client.delete(f"user:{user_id}:{session_id}")
-            print(f"{user_id} 연결 해제 및 세션 삭제 완료. (세션: {session_id})")
-    return ws
+        async for message in pubsub.listen():
+            if message['type'] == 'message' and message['data']:
+                try:
+                    data = json.loads(message['data'])
+                    if data.get('text') and data['text'].strip():
+                        sender = data.get("sender", "unknown")
+                        for user_id, ws in self.clients.items():
+                            if sender != user_id:
+                                await ws.send_json(data)
+                except json.JSONDecodeError:
+                    print("잘못된 메시지 포맷 감지")
 
 
-# Redis Pub/Sub 구독자
-async def redis_subscriber():
-    pubsub = redis_client.pubsub()
-    await pubsub.subscribe('chat_channel')
-
-    async for message in pubsub.listen():
-        if message['type'] == 'message' and message['data']:
-            try:
-                data = json.loads(message['data'])
-                if data.get('text') and data['text'].strip():
-                    sender = data.get("sender", "unknown")
-                    for user_id, ws in clients.items():
-                        if sender != user_id:
-                            await ws.send_json(data)
-            except json.JSONDecodeError:
-                print("잘못된 메시지 포맷 감지")
-
-
-# 서버 실행
 if __name__ == "__main__":
-    web.run_app(create_app(), host="0.0.0.0", port=8080)
+    server = WebServer()
+    web.run_app(server.create_app(), host="0.0.0.0", port=8080)
