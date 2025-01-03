@@ -33,7 +33,7 @@ This project aims to provide hands-on experience in building and deploying a sim
    docker-compose up --build
 
    # Mode: Multi-process
-   APP_MODE=multi-process APP_WORKERS=6 docker compose up --build
+   APP_MODE=multi-process APP_WORKERS=4 docker compose up --build
    ```
    *This will automatically build and start the application with all dependencies (Redis, Python, etc.).*
    *You can select a mode between single and multi-process mode.*

@@ -10,8 +10,8 @@ services:
       - .:/app
     environment:
       - PYTHONUNBUFFERED=1
-      - APP_MODE=single-process   # Default: single-process (Can be changed to multi-process)
-      - APP_WORKERS=4             # Default: 4 (Only works when APP_MODE=multi-process)
+      - APP_MODE=${APP_MODE:-single-thread}
+      - APP_WORKERS=${APP_WORKERS:-1}
     depends_on:
       - redis
 

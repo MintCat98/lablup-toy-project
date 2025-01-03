@@ -131,10 +131,11 @@ class WebServer:
                     print("잘못된 메시지 포맷 감지")
 
 
-if __name__ == "__main__":
-    server = WebServer()
-    app = server.create_app()
+server = WebServer()
+application = asyncio.run(server.create_app())
 
+
+if __name__ == "__main__":
     # Default to single-process mode
     app_mode = os.getenv('APP_MODE', 'single-process')
 
@@ -143,4 +144,4 @@ if __name__ == "__main__":
         from gunicorn.app.wsgiapp import run
         run()
     else:
-        web.run_app(app, host="0.0.0.0", port=8080)
+        web.run_app(application, host="0.0.0.0", port=8080)
