@@ -49,11 +49,11 @@ This project aims to provide hands-on experience in building and deploying a sim
 ## Demo & How to Use
 1. **Enter your nickname**
 <div align="center">
-    <img src="https://github.com/user-attachments/assets/1dcacc9d-ed5e-4959-8942-3711e0dc2ac0" width="400">
+    <img src="https://github.com/user-attachments/assets/2c1a2cd7-da6d-4009-94c4-2f9920625c46" width="400">
 </div>
 <br>
 
 2. **Enjoy**
 <div align="center">
-    <img src="https://github.com/user-attachments/assets/92d2b560-ac4a-473d-b59b-49049d883898" width="400">
+    <img src="https://github.com/user-attachments/assets/05c4e392-cb08-4f68-91cd-b84c2fec8466" width="400">
 </div>
