@@ -162,6 +162,7 @@ function appendMessage(message, sender = "other") {
     msg.classList.add(sender === "user" ? "user" : "other");
     msg.textContent = message.text;
 
+    // Feedback: Timestamp 같은 것들은 전송 지연 등의 이유로 서버에서 처리하는 것이 좋음
     const timestamp = document.createElement("div");
     const now = new Date();
     const formattedTime = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()} - ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;

@@ -53,7 +53,10 @@ class WebServer:
         session_id = session.get('session_id', str(uuid.uuid4()))
         session['session_id'] = session_id
 
+        # Feedback: 유저가 변조할 수 없도록 최소한의 정보만 클라이언트에게 전달하는 게 좋음
+        # Feedback: 되도록이면 파이단트 같은 라이브러리를 사용해서 데이터를 관리하는 게 바람직함
         # Check if the nickname is already in use
+        # Feedback: get으로 하나만 가져오는 게 좋음 (지금은 keys로 모두 가져오고 있음)
         existing_sessions = await self.redis_client.keys(f"user:{nickname}:*")
         if existing_sessions and f"user:{nickname}:{session_id}" not in existing_sessions:
             return web.json_response({'error': f'{nickname}은 이미 사용중인 닉네임입니다.'}, status=400)
@@ -84,6 +87,7 @@ class WebServer:
             await ws.close()
             return ws
 
+        # Feedback: 중복 코드 제거되지 않음
         # Add the WebSocket connection to the list of clients
         self.clients[user_id] = ws
         pubsub = self.redis_client.pubsub()
@@ -112,11 +116,13 @@ class WebServer:
                 print(f"{user_id} 연결 해제 및 세션 삭제 완료. (세션: {session_id})")
         return ws
 
+    # Feedback: redis_subscriber 같은 것들은 while True로 돌리는 게 좋음
     async def redis_subscriber(self):
         # Subscribe to the chat_channel in Redis to broadcast messages
         pubsub = self.redis_client.pubsub()
         await pubsub.subscribe('chat_channel')
 
+        # Feedback: 예외처리를 좀 더 꼼꼼하게
         async for message in pubsub.listen():
             if message['type'] == 'message' and message['data']:
                 try:
@@ -129,6 +135,9 @@ class WebServer:
                 except json.JSONDecodeError:
                     print("잘못된 메시지 포맷 감지")
 
+
+# Feedback: 멀티프로세스를 할 거면, TCP 포트에 reuse_port=True를 설정해야 함
+# Feedback: 멀티프로세스를 할 때는, 매 클라이언트마다 redis 연결을 맺는 게 아니라, 프로세스마다 하나씩 연결을 맺는 게 좋음 (과부하 방지)
 
 if __name__ == "__main__":
     server = WebServer()
